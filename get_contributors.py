@@ -50,8 +50,12 @@ repos = [
     'unicode-slugify',
     'webdev-contributors',
 ]
-base_url = 'https://api.github.com/repos/mozilla'
-commit_levels = [100, 50, 25, 10, 1]
+repos = [
+    'kuma',
+]
+GITHUB_API_HOST = 'https://api.github.com'
+base_url = '%s/repos/mozilla' % GITHUB_API_HOST
+commit_levels = [100, 50, 25, 10, 1, 0]
 contributors = {}
 contributors_by_level = {}
 
@@ -81,6 +85,24 @@ def main():
                     contributor['email'] = first['author']['email']
                 except:
                     pass
+
+        print "Fetching forkers of %s" % repo
+        forks = api_get('%s/forks' % repo, None, 'forks',
+                        GITHUB_REPOS_CACHE_AGE)
+        for fork in forks:
+            username = fork.owner.login
+            contributor = contributors.setdefault(username, {
+                "username": username, "email": None
+            })
+            contributor.setdefault('repos', []).append(repo)
+            if not contributor['email']:
+                print "Fetching email for %s" % username
+                forker = api_get('%s/users/%s' % (GITHUB_API_HOST, username))
+                try:
+                    contributor['email'] = forker['email']
+                except:
+                    pass
+
 
     # Group the contributors into levels by number of contributions:
     for user, contributor in contributors.items():
